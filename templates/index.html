@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+    <head>
+        <link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet'>
+        <style>
+            body {
+              font-family: Montserrat;
+              font-size: 20pt;
+            }
+        </style>
+        <meta charset="utf-8">
+        <title>ВТБ Новости</title>
+    </head>
+    <body>
+        <H1>Новости для 
+            {% if category == 0 %}
+                бухгалтера
+            {% elif category == 1 %}
+                генерального директора
+            {% endif %}
+        </H1>
+        <ol>
+            {% for current in news %}
+                <li><a href="{{current['url']}}">{{current['title']}}</a> &mdash; {{current['date']}}</li>
+            {% endfor %}
+        </ol>
+    </body>
+</html>
