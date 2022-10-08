@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta
-import requests
 from bs4 import BeautifulSoup
-
-from concurrent.futures import as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from datetime import datetime, timedelta
+from multiprocessing import cpu_count
+import requests
 from requests_futures.sessions import FuturesSession
-
+ 
 class Scrapper:
     def __init__(self, name, getter):
         self.session_ = requests.Session()
@@ -14,7 +14,7 @@ class Scrapper:
     def Get(self, amount=1):
         return self.getter_(self.session_, amount)
 
-def RIA_getter(sess, amount):
+def RIAGetter(sess, amount):
     time = datetime.today()
     result = []
     for i in range(amount):
@@ -33,11 +33,35 @@ def RIA_getter(sess, amount):
                     result.append({"url": links[id]["href"], "date": time.strftime("%Y%m%d"), "title": links[id].get_text(), "text": temp.get_text()})
             time -= timedelta(hours=5)
     
+    return result 
+
+def LentaGetter(sess, amount):
+    endpoint = "https://lenta.ru/news/"
+    time = datetime.today()
+    for i in range(amount):
+        news_page = endpoint + time.strftime("%Y/%m/%d")
+        doc_tree = BeautifulSoup(sess.get(news_page).text, 'html.parser')
+        news_list = doc_tree.find_all("a", "card-full-news _archive")
+        links = tuple(f"https://lenta.ru{news['href']}" for news in news_list)
+        result = []
+        with FuturesSession() as session:
+            futures = [session.get(url) for url in links]
+            for id, future in zip(range(len(futures)), as_completed(futures)):
+                inner_text = future.result()
+                doc_tree = BeautifulSoup(inner_text.text, 'html.parser')
+                tags = doc_tree.find("a", "item dark active")
+                tags = tags.get_text() if tags else None
+        
+                text = doc_tree.find("div", "topic-body__content").get_text()
+        
+                topic = doc_tree.find("a", "b-header-inner__block")
+                topic = topic.get_text() if topic else None
+        
+                title = doc_tree.find("span", "topic-body__title")
+                title = title.get_text() if title else None
+                result.append({"url": links[id], "title": title, "text": text, "date": links[id][22:32].replace('/', '')})
+        time -= timedelta(days=1)
     return result
 
-def Lenta_getter():
-    pass
-
-news_scrappers = [Scrapper('RIA', RIA_getter)]
-# news_scrappers = [Scrapper('RIA', RIA_getter), Scrapper('Lenta', Lenta_getter)]
+news_scrappers = [Scrapper('RIA', RIAGetter), Scrapper('Lenta', LentaGetter)]
 
