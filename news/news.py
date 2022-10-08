@@ -7,7 +7,7 @@ class NewsLoader:
         self.last_loaded_ = datetime.today()
         self.last_news_ = []
         self.buffer_size_ = buffer_size * len(self.scrappers_)
-        self.GetLastNews(10)
+        self.GetLastNews(20)
         
     def GetNews(self):
         self.GetLastNews(1)
