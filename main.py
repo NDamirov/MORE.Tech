@@ -14,4 +14,4 @@ def predict_product():
     return render_template('index.html', news=last_news, category=category)
 
 if __name__ == '__main__':
-    app.run(host='localhost', port='5050', debug=False)
+    app.run(host='localhost', port='5050', debug=True)
