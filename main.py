@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from news.news import NewsLoader
 from model import model
 import threading
+import time
 
 app = Flask(__name__)
 news_loader = NewsLoader()
@@ -18,6 +19,7 @@ def worker():
     while (datetime.today() - last_update) > timedelta(hours=3):
         news_loader.GetNews()
         last_update = datetime.today()
+        time.sleep(60)
 
 if __name__ == '__main__':
     t = threading.Thread(target=worker)
