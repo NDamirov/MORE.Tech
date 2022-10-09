@@ -36,31 +36,34 @@ def RIAGetter(sess, amount):
     return result 
 
 def LentaGetter(sess, amount):
-    endpoint = "https://lenta.ru/news/"
+    result = []
+    endpoint = "https://lenta.ru/rubrics/economics"
+    rubrics_accountant = ['/economy', '/markets', '/social']
+    rubrics_buisnessman = ['/business_climate', '/investments']
     time = datetime.today()
-    for i in range(amount):
-        news_page = endpoint + time.strftime("%Y/%m/%d")
-        doc_tree = BeautifulSoup(sess.get(news_page).text, 'html.parser')
-        news_list = doc_tree.find_all("a", "card-full-news _archive")
-        links = tuple(f"https://lenta.ru{news['href']}" for news in news_list)
-        result = []
-        with FuturesSession() as session:
-            futures = [session.get(url) for url in links]
-            for id, future in zip(range(len(futures)), as_completed(futures)):
-                inner_text = future.result()
-                doc_tree = BeautifulSoup(inner_text.text, 'html.parser')
-                tags = doc_tree.find("a", "item dark active")
-                tags = tags.get_text() if tags else None
-        
-                text = doc_tree.find("div", "topic-body__content").get_text()
-        
-                topic = doc_tree.find("a", "b-header-inner__block")
-                topic = topic.get_text() if topic else None
-        
-                title = doc_tree.find("span", "topic-body__title")
-                title = title.get_text() if title else None
-                result.append({"url": links[id], "title": title, "text": text, "date": links[id][22:32].replace('/', '')})
-        time -= timedelta(days=1)
+    for current_rubric in rubrics_buisnessman:
+        for i in range(amount):
+            news_page = endpoint + current_rubric + f"/{i + 1}/"
+            doc_tree = BeautifulSoup(sess.get(news_page).text, 'html.parser')
+            news_list = doc_tree.find_all("a", "card-full-news _subrubric")
+            links = tuple(f"https://lenta.ru{news['href']}" for news in news_list)
+            with FuturesSession() as session:
+                futures = [session.get(url) for url in links]
+                for id, future in zip(range(len(futures)), as_completed(futures)):
+                    inner_text = future.result()
+                    doc_tree = BeautifulSoup(inner_text.text, 'html.parser')
+                    tags = doc_tree.find("a", "item dark active")
+                    tags = tags.get_text() if tags else None
+
+                    text = doc_tree.find("div", "topic-body__content").get_text()
+
+                    topic = doc_tree.find("a", "b-header-inner__block")
+                    topic = topic.get_text() if topic else None
+
+                    title = doc_tree.find("span", "topic-body__title")
+                    title = title.get_text() if title else None
+
+                    result.append({"title": title, "text": text, "url": links[id][22:32].replace('/', '')})
     return result
 
 news_scrappers = [Scrapper('RIA', RIAGetter), Scrapper('Lenta', LentaGetter)]
